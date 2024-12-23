@@ -20,15 +20,20 @@ class BaseFilter:
 
             c_ds_entry: BaseDataSetEntry = dataset[idx]
 
-            if self._filter_decision_single_entry(idx, c_ds_entry):
+            if self._filter_decision_single_entry(
+                idx, c_ds_entry, **self._global_dataset_properties(dataset)
+            ):
                 new_data[c_ds_entry.identifier] = c_ds_entry.data
 
         new_ds = self._post_processing(new_data)
 
         return new_ds
 
+    def _global_dataset_properties(self, _: BaseDataSet) -> dict:
+        return {}
+
     def _filter_decision_single_entry(
-        self, index: int, ds_entry: BaseDataSetEntry
+        self, index: int, ds_entry: BaseDataSetEntry, **kwargs
     ) -> bool:
         raise NotImplementedError(
             "method '_filter_decision_single_entry' has not yet been implemented"
