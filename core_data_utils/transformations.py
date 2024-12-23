@@ -1,29 +1,34 @@
-import os
 from typing import Any, Iterable
 
-from .datasets import BaseDataSet
+from .datasets import BaseDataSet, BaseDataSetEntry
 
 
 class BaseFilter:
-    def __init__(self, name: str, out_dir: str | None = None) -> None:
-        super().__init__(name, out_dir)
+
+    def __init__(self) -> None:
+        self._setup()
+
+    def _setup(self) -> None:
+        pass
 
     def __call__(self, dataset: BaseDataSet) -> BaseDataSet:
         new_data: dict = {}
 
         dataset = dataset.copy()
 
-        for idx, entry_id in enumerate(dataset.keys()):
+        for idx, c_ds_entry in enumerate(dataset):
 
-            if self._filter_decision_single_entry(idx, dataset[entry_id]):
-                new_data[entry_id] = dataset[entry_id]
+            c_ds_entry: BaseDataSetEntry = dataset[idx]
+
+            if self._filter_decision_single_entry(idx, c_ds_entry):
+                new_data[c_ds_entry.identifier] = c_ds_entry.data
 
         new_ds = self._post_processing(new_data)
 
         return new_ds
 
     def _filter_decision_single_entry(
-        self, index: int, in_tuple: tuple[str, Any]
+        self, index: int, ds_entry: BaseDataSetEntry
     ) -> bool:
         raise NotImplementedError(
             "method '_filter_decision_single_entry' has not yet been implemented"
@@ -40,7 +45,7 @@ class BaseMultiDataSetTransformation:
     ) -> None:
         self._setup()
 
-    def _setup(self, *args, **kwargs) -> None:
+    def _setup(self) -> None:
         pass
 
     def _assert_compatability(self, datasets: Iterable[BaseDataSet]) -> bool:
@@ -61,22 +66,21 @@ class BaseMultiDataSetTransformation:
         new_data_dict: dict = {}
 
         for identifier in datasets[0].keys():
-            new_data_dict[identifier] = self._transform_single_entry(
-                self._pack_entry(
-                    identifier=identifier, *(d[identifier] for d in datasets)
-                )
+            new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
+                self._merge_entries([d[identifier] for d in datasets])
             )
+            new_data_dict[new_ds_entry.identifier] = new_ds_entry.data
 
         new_ds = self._post_processing(new_data_dict)
 
         return new_ds
 
-    def _pack_entry(self, identifier: str, *args) -> tuple[str, tuple]:
-        return tuple([identifier, args])
+    def _merge_entries(self, entries: Iterable[BaseDataSetEntry]) -> BaseDataSetEntry:
+        return BaseDataSetEntry(
+            identifier=entries[0].identifier, data=tuple((e.data for e in entries))
+        )
 
-    def _transform_single_entry(
-        self, in_tuple: tuple[str, tuple[Any, ...]]
-    ) -> tuple[str, Any]:
+    def _transform_single_entry(self, entry: BaseDataSetEntry) -> tuple[str, Any]:
         raise NotImplementedError(
             "'_transform_single_entry' has not been implemented yet."
         )
@@ -93,9 +97,9 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
     def __call__(self, dataset: BaseDataSet) -> Any:
         return super().__call__([dataset])
 
-    def _pack_entry(self, identifier: str, *args) -> tuple[str, tuple]:
-        assert len(args) == 1
-        return tuple(identifier, args[0])
+    def _merge_entries(self, entries: Iterable[BaseDataSetEntry]) -> BaseDataSetEntry:
+        assert len(entries) == 1
+        return entries[0]
 
-    def _transform_single_entry(self, in_tuple: tuple[str, Any]) -> tuple[str, Any]:
-        return super()._transform_single_entry(in_tuple)
+    def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
+        return super()._transform_single_entry(entry)
