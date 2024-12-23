@@ -41,7 +41,7 @@ class ImageDataset(BaseDataSet):
         return cls(data)
 
     def to_directory(
-        self, directory: str, mkdir: bool = True, ftype: str = ".png"
+        self, directory: str, mkdir: bool = False, ftype: str = ".png"
     ) -> None:
         if mkdir:
             os.makedirs(directory, exist_ok=True)
