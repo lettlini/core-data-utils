@@ -42,7 +42,7 @@ class BaseDataSet:
         if isinstance(identifier, str):
             if identifier not in self._identifiers:
                 raise IndexError(f"'{identifier}' is not a valid identifier.")
-            return self._data[identifier]
+            return BaseDataSetEntry(identifier=identifier, data=self._data[identifier])
 
         if isinstance(identifier, int):
             if identifier >= self._num_entries:
