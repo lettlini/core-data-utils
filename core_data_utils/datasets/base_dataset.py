@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 import pickle
 from copy import deepcopy
+from collections import namedtuple
+
+BaseDataSetEntry = namedtuple("BaseDataSetEntry", ["identifier", "data"])
 
 
 class BaseDataSet:
@@ -19,10 +22,13 @@ class BaseDataSet:
             self._data = data
             self._num_entries = len(data)
             self._identifiers = list(self._data.keys())
-            self._identifiers.sort()
+            self._identifier_ordering()
 
     def __len__(self) -> int:
         return self._num_entries
+
+    def _identifier_ordering(self) -> None:
+        self._identifiers.sort()
 
     def __repr__(self) -> str:
         repr_str: str = f"DataSet with {self._num_entries} entries:"
@@ -35,16 +41,22 @@ class BaseDataSet:
     def __getitem__(self, identifier: str | int) -> tuple:
         if isinstance(identifier, str):
             if identifier not in self._identifiers:
-                raise IndexError(f"Identifier {identifier} does not exist.")
+                raise IndexError(f"'{identifier}' is not a valid identifier.")
             return self._data[identifier]
 
         if isinstance(identifier, int):
             if identifier >= self._num_entries:
-                raise IndexError("Index out of Bounds")
-            return (
-                self._identifiers[identifier],
-                self._data[self._identifiers[identifier]],
+                raise IndexError(
+                    f"Index {identifier} out of bounds for BaseDataSet with {self._num_entries} entries."
+                )
+            return BaseDataSetEntry(
+                identifier=self._identifiers[identifier],
+                data=self._data[self._identifiers[identifier]],
             )
+
+        raise ValueError(
+            f"BaseDataSet.__getitem__ has not been implemented for argument type {type(identifier)}"
+        )
 
     def copy(self) -> BaseDataSet:
         return self.__class__(deepcopy(self._data))
@@ -52,7 +64,7 @@ class BaseDataSet:
     def __copy__(self) -> BaseDataSet:
         return self.copy()
 
-    def to_pickle(self, fpath: str, mkdir: bool = True) -> None:
+    def to_pickle(self, fpath: str, mkdir: bool = False) -> None:
         if mkdir:
             os.makedirs(os.path.dirname(fpath), exist_ok=True)
 
