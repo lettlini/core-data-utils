@@ -3,6 +3,7 @@ from multiprocessing import Pool
 from typing import Any, Iterable
 
 from .datasets import BaseDataSet, BaseDataSetEntry
+from tqdm import tqdm
 
 
 class BaseFilter:
@@ -84,7 +85,7 @@ class BaseMultiDataSetTransformation:
         if len(kwargs) == 0:
             raise ValueError("Length of supplied 'datasets' iterable was 0.")
 
-        if not self._assert_compatability(kwargs):
+        if not self._assert_compatability(**kwargs):
             raise RuntimeError("Supplied DataSets are not compatible.")
 
         if copy_datasets:
@@ -96,7 +97,7 @@ class BaseMultiDataSetTransformation:
         identifiers: list[str] = next(iter(kwargs.values())).keys()
 
         if not parallel:
-            for identifier in identifiers:
+            for identifier in tqdm(identifiers):
                 new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
                     self._merge_entries(
                         identifier=identifier,
@@ -135,7 +136,7 @@ class BaseMultiDataSetTransformation:
 
         return BaseDataSetEntry(identifier=identifier, data=kwargs)
 
-    def _transform_single_entry(self, entry: BaseDataSetEntry) -> tuple[str, Any]:
+    def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
         raise NotImplementedError(
             "'_transform_single_entry' has not been implemented yet."
         )
@@ -146,7 +147,7 @@ class BaseMultiDataSetTransformation:
 
 class BaseDataSetTransformation(BaseMultiDataSetTransformation):
 
-    def _assert_compatability(self, datasets: Iterable[BaseDataSet]) -> bool:
+    def _assert_compatability(self, **kwargs) -> bool:
         return True
 
     def _merge_entries(
@@ -159,7 +160,9 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
         return BaseDataSetEntry(identifier=identifier, data=next(iter(kwargs.values())))
 
     def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
-        return super()._transform_single_entry(entry)
+        raise NotImplementedError(
+            "'_transform_single_entry' has not been implemented yet."
+        )
 
     def __call__(
         self,
