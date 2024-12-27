@@ -56,10 +56,16 @@ class BaseMultiDataSetTransformation:
     def _setup(self) -> None:
         pass
 
-    def _assert_compatability(self, datasets: Iterable[BaseDataSet]) -> bool:
-        raise NotImplementedError(
-            "'_assert_compatability' has not been implemented yet."
-        )
+    def _assert_compatability(self, **kwargs) -> bool:
+        identifiers: list[str] = []
+
+        for index, (_, ds) in enumerate(kwargs.items()):
+            if index == 0:
+                identifiers = ds.keys()
+            else:
+                if ds.keys() != identifiers:
+                    return False
+        return True
 
     def _transform(
         self,
