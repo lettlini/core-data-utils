@@ -1,7 +1,7 @@
-name: check_formatting
+name: run_tests
 on: [push]
 jobs:
-  formatting_verification_job:
+  run_tests_job:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,9 +14,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install black isort
+          pip install pytest
+          pip install -e .
 
-      - name: Check formatting
+      - name: Run tests
         run: |
-          black --check .
-          isort --check-only .
+          pytest tests/

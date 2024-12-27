@@ -14,6 +14,10 @@ class BaseDataSet:
     _identifiers: list[str]
 
     def __init__(self, data: dict = None):
+
+        # create own copy of data dict
+        data = deepcopy(data)
+
         if data is None:
             self._data = {}
             self._num_entries = 0
