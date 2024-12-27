@@ -2,8 +2,9 @@ import copy
 from multiprocessing import Pool
 from typing import Any, Iterable
 
-from .datasets import BaseDataSet, BaseDataSetEntry
 from tqdm import tqdm
+
+from .datasets import BaseDataSet, BaseDataSetEntry
 
 
 class BaseFilter:
