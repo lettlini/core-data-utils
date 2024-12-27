@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 import pickle
-from copy import deepcopy
 from collections import namedtuple
+from copy import deepcopy
 
 BaseDataSetEntry = namedtuple("BaseDataSetEntry", ["identifier", "data"])
 
