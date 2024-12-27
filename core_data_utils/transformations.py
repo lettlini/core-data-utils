@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from typing import Any, Iterable
 
 from .datasets import BaseDataSet, BaseDataSetEntry
@@ -58,7 +59,20 @@ class BaseMultiDataSetTransformation:
             "'_assert_compatability' has not been implemented yet."
         )
 
-    def __call__(self, datasets: Iterable[BaseDataSet]) -> Any:
+    def __call__(
+        self, datasets: Iterable[BaseDataSet], parallel: bool = False, cpus: int = 6
+    ) -> Any:
+        """
+        Args:
+            datasets (Iterable[BaseDataSet]): Iterable of DataSets acting as
+                input data for carrying out the transformation
+            parallel (bool): If 'True', the transformation will be exectued in
+                parallel. Default is 'False'.
+            cpus (int): How many processes should be spawned when executing
+                transformation in parallel. Default is '6'.
+        Returns:
+            (Any): Result of DataSet transformation
+        """
 
         if len(datasets) == 0:
             raise ValueError("Length of supplied 'datasets' iterable was 0.")
@@ -68,13 +82,29 @@ class BaseMultiDataSetTransformation:
 
         datasets = [ds.copy() for ds in datasets]
 
-        new_data_dict: dict = {}
+        new_data_list: list[BaseDataSetEntry] = []
 
-        for identifier in datasets[0].keys():
-            new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
+        if not parallel:
+            for identifier in datasets[0].keys():
+                new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
+                    self._merge_entries([d[identifier] for d in datasets])
+                )
+                new_data_list.append(new_ds_entry)
+        else:
+            # create Iterable of "entries" that can be passed to Pool.map
+            entries_iterable: list[BaseDataSet] = [
                 self._merge_entries([d[identifier] for d in datasets])
-            )
-            new_data_dict[new_ds_entry.identifier] = new_ds_entry.data
+                for identifier in datasets[0].keys()
+            ]
+
+            with Pool(cpus) as parpool:
+                new_data_list: list[BaseDataSet] = parpool.map(
+                    self._transform_single_entry, entries_iterable
+                )
+
+        new_data_dict: dict = {
+            nentry.identifier: nentry.data for nentry in new_data_list
+        }
 
         new_ds = self._post_processing(new_data_dict)
 
@@ -99,8 +129,10 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
     def _assert_compatability(self, datasets: Iterable[BaseDataSet]) -> bool:
         return True
 
-    def __call__(self, dataset: BaseDataSet) -> Any:
-        return super().__call__([dataset])
+    def __call__(
+        self, dataset: BaseDataSet, parallel: bool = False, cpus: int = 6
+    ) -> Any:
+        return super().__call__([dataset], parallel=parallel, cpus=cpus)
 
     def _merge_entries(self, entries: Iterable[BaseDataSetEntry]) -> BaseDataSetEntry:
         assert len(entries) == 1
