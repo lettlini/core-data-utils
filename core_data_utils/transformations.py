@@ -1,3 +1,4 @@
+import copy
 from multiprocessing import Pool
 from typing import Any, Iterable
 
@@ -59,42 +60,60 @@ class BaseMultiDataSetTransformation:
             "'_assert_compatability' has not been implemented yet."
         )
 
-    def __call__(
-        self, datasets: Iterable[BaseDataSet], parallel: bool = False, cpus: int = 6
+    def _transform(
+        self,
+        parallel: bool = False,
+        cpus: int = 6,
+        copy_datasets: bool = True,
+        **kwargs: dict[str, Any],
     ) -> Any:
         """
         Args:
-            datasets (Iterable[BaseDataSet]): Iterable of DataSets acting as
-                input data for carrying out the transformation
             parallel (bool): If 'True', the transformation will be exectued in
                 parallel. Default is 'False'.
             cpus (int): How many processes should be spawned when executing
                 transformation in parallel. Default is '6'.
+            copy_datasets (bool): Whether to create a (deep) copy of the
+                input datasets. Default is 'True'
+            **kwargs (dict[str, BaseDataSet]): Iterable of DataSets acting as
+                input data for carrying out the transformation
         Returns:
             (Any): Result of DataSet transformation
         """
 
-        if len(datasets) == 0:
+        if len(kwargs) == 0:
             raise ValueError("Length of supplied 'datasets' iterable was 0.")
 
-        if not self._assert_compatability(datasets):
+        if not self._assert_compatability(kwargs):
             raise RuntimeError("Supplied DataSets are not compatible.")
 
-        datasets = [ds.copy() for ds in datasets]
+        if copy_datasets:
+            kwargs = copy.deepcopy(kwargs)
 
         new_data_list: list[BaseDataSetEntry] = []
 
+        # prepare list of identifiers
+        identifiers: list[str] = next(iter(kwargs.values())).keys()
+
         if not parallel:
-            for identifier in datasets[0].keys():
+            for identifier in identifiers:
                 new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
-                    self._merge_entries([d[identifier] for d in datasets])
+                    self._merge_entries(
+                        identifier=identifier,
+                        **{
+                            dsname: ds[identifier].data for dsname, ds in kwargs.items()
+                        },
+                    )
                 )
                 new_data_list.append(new_ds_entry)
         else:
             # create Iterable of "entries" that can be passed to Pool.map
             entries_iterable: list[BaseDataSet] = [
-                self._merge_entries([d[identifier] for d in datasets])
-                for identifier in datasets[0].keys()
+                self._merge_entries(
+                    identifier=identifier,
+                    **{dsname: ds[identifier].data for dsname, ds in kwargs.items()},
+                )
+                for identifier in identifiers
             ]
 
             with Pool(cpus) as parpool:
@@ -110,10 +129,11 @@ class BaseMultiDataSetTransformation:
 
         return new_ds
 
-    def _merge_entries(self, entries: Iterable[BaseDataSetEntry]) -> BaseDataSetEntry:
-        return BaseDataSetEntry(
-            identifier=entries[0].identifier, data=tuple((e.data for e in entries))
-        )
+    def _merge_entries(
+        self, identifier: str, **kwargs: dict[str, BaseDataSetEntry]
+    ) -> BaseDataSetEntry:
+
+        return BaseDataSetEntry(identifier=identifier, data=kwargs)
 
     def _transform_single_entry(self, entry: BaseDataSetEntry) -> tuple[str, Any]:
         raise NotImplementedError(
@@ -129,14 +149,14 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
     def _assert_compatability(self, datasets: Iterable[BaseDataSet]) -> bool:
         return True
 
-    def __call__(
-        self, dataset: BaseDataSet, parallel: bool = False, cpus: int = 6
-    ) -> Any:
-        return super().__call__([dataset], parallel=parallel, cpus=cpus)
-
-    def _merge_entries(self, entries: Iterable[BaseDataSetEntry]) -> BaseDataSetEntry:
-        assert len(entries) == 1
-        return entries[0]
+    def _merge_entries(
+        self, identifier: str, **kwargs: dict[str, BaseDataSetEntry]
+    ) -> BaseDataSetEntry:
+        if len(kwargs) != 1:
+            raise ValueError(
+                f"Expected exactly 1 data entry to merge, got {len(kwargs)}."
+            )
+        return BaseDataSetEntry(identifier=identifier, data=next(iter(kwargs.values())))
 
     def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
         return super()._transform_single_entry(entry)
