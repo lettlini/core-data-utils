@@ -77,8 +77,8 @@ class BaseDataSet:
         with open(fpath, "wb") as save_file:
             pickle.dump(self._data, save_file)
 
-    @staticmethod
-    def from_pickle(fpath: str) -> BaseDataSet:
+    @classmethod
+    def from_pickle(cls, fpath: str) -> BaseDataSet:
         """
         Load data into new instance of 'BaseDataSet'.
         Args:
@@ -90,7 +90,7 @@ class BaseDataSet:
         with open(fpath, "rb") as read_file:
             data_dict = pickle.load(read_file)
 
-        return BaseDataSet(data=data_dict)
+        return cls(data=data_dict)
 
     def keys(self) -> list[str]:
         return self._identifiers
