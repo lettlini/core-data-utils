@@ -160,3 +160,14 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
 
     def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
         return super()._transform_single_entry(entry)
+
+    def __call__(
+        self,
+        dataset: BaseDataSet,
+        parallel: bool = False,
+        cpus: int = 6,
+        copy_datasets: bool = True,
+    ) -> Any:
+        return super()._transform(
+            parallel=parallel, cpus=cpus, copy_datasets=copy_datasets, x=dataset
+        )
