@@ -19,3 +19,13 @@ def test_simple_dataset():
     for idx, entry in enumerate(sds):
         assert entry.identifier == idx
         assert entry.data == 2 * idx
+
+
+def test_data_independence():
+    example_data = {i: 2 * i for i in range(500)}
+
+    sds = BaseDataSet(example_data)
+
+    example_data[0] = -1
+
+    assert sds[0].data == 0
