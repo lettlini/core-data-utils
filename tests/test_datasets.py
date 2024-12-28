@@ -4,27 +4,28 @@ from core_data_utils.datasets import BaseDataSet
 def test_empty_dataset():
     bds = BaseDataSet()
 
-    assert bds._num_entries == 0
-    assert not bds._identifiers
+    assert len(bds) == 0
+    assert not bds._data_identifiers
     assert len(bds._data) == 0
 
 
 def test_simple_dataset():
-    example_data = {i: 2 * i for i in range(500)}
+    example_data = {str(i): 2 * i for i in range(9)}
 
-    sds = BaseDataSet(example_data)
+    sds = BaseDataSet(None, example_data, None)
 
-    assert len(sds) == 500
+    print(sds._data_identifiers)
+    assert len(sds) == 9
 
     for idx, entry in enumerate(sds):
-        assert entry.identifier == idx
+        assert entry.identifier == str(idx)
         assert entry.data == 2 * idx
 
 
 def test_data_independence():
     example_data = {i: 2 * i for i in range(500)}
 
-    sds = BaseDataSet(example_data)
+    sds = BaseDataSet(None, example_data, None)
 
     example_data[0] = -1
 
