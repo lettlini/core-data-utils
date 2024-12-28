@@ -1,9 +1,8 @@
 from typing import Any
+
 from core_data_utils.datasets import BaseDataSet, BaseDataSetEntry
-from core_data_utils.transformations import (
-    BaseMultiDataSetTransformation,
-    BaseDataSetTransformation,
-)
+from core_data_utils.transformations import (BaseDataSetTransformation,
+                                             BaseMultiDataSetTransformation)
 
 
 class SquareNumTransformation(BaseDataSetTransformation):
@@ -20,7 +19,7 @@ def test_serial_parallel():
 
     example_data = {str(i): 2 * i for i in range(9)}
 
-    ods = BaseDataSet(None, example_data, None)
+    ods = BaseDataSet.from_flat_dicts(example_data)
 
     serial_ds = st(dataset=ods, parallel=False)
     parallel_ds = st(dataset=ods, parallel=True, cpus=2)
