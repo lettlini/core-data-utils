@@ -25,7 +25,9 @@ class BaseDataSet:
     ) -> None:
 
         # initialize to empty dataset
-        self._metadata: dict[str, Any] = ds_metadata if ds_metadata is not None else {}
+        self._metadata: dict[str, Any] = (
+            deepcopy(ds_metadata) if ds_metadata is not None else {}
+        )
         self._data_identifiers: list[str] = []
         self._data: dict[str, Any] = {}
         self._data_metadata: dict[str] = {}
@@ -34,13 +36,13 @@ class BaseDataSet:
             raise RuntimeError("Metadata without data supplied.")
 
         if data is not None:
-            self._data = data
+            self._data = deepcopy(data)
 
             if data_metadata is not None:
                 if not BaseDataSet._data_metadata_compat(data, data_metadata):
                     raise ValueError("Data and metadata are not compatible.")
 
-                self._data_metadata = data_metadata
+                self._data_metadata = deepcopy(data_metadata)
 
             if data_metadata is None:
                 self._data_metadata = {k: {} for k, _ in data.items()}
