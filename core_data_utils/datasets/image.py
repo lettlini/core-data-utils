@@ -38,12 +38,4 @@ class ImageDataset(BaseDataSet):
                 cv2.COLOR_BGR2RGB,
             )
 
-        return cls(data)
-
-    def to_directory(
-        self, directory: str, mkdir: bool = False, ftype: str = ".png"
-    ) -> None:
-        if mkdir:
-            os.makedirs(directory, exist_ok=True)
-        for identifier, image in self:
-            cv2.imwrite(os.path.join(directory, identifier + ftype), image)
+        return cls(ds_metadata=None, data=data, data_metadata=None)
