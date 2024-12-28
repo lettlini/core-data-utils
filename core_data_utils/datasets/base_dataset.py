@@ -4,8 +4,7 @@ import os
 import pickle
 from collections import namedtuple
 from copy import deepcopy
-
-from typing import Any
+from typing import Any, Optional
 
 BaseDataSetEntry = namedtuple("BaseDataSetEntry", ["identifier", "data", "metadata"])
 
@@ -21,7 +20,11 @@ class BaseDataSet:
     """
 
     def __init__(
-        self, ds_metadata: dict = None, data: dict = None, data_metadata: dict = None
+        self,
+        ds_metadata: Optional[dict[str, Any]] = None,
+        dataset_entries: Optional[
+            list[BaseDataSetEntry] | dict[str, BaseDataSetEntry]
+        ] = None,
     ) -> None:
 
         # initialize to empty dataset
@@ -29,55 +32,28 @@ class BaseDataSet:
             deepcopy(ds_metadata) if ds_metadata is not None else {}
         )
         self._data_identifiers: list[str] = []
-        self._data: dict[str, Any] = {}
-        self._data_metadata: dict[str] = {}
+        self._data: dict[str, BaseDataSetEntry] = {}
 
-        if (data is None) and (data_metadata is not None):
-            raise RuntimeError("Metadata without data supplied.")
+        if dataset_entries is not None:
+            if isinstance(dataset_entries, list):
+                for entry in dataset_entries:
+                    self._data[entry.identifier] = entry
 
-        if data is not None:
-            self._data = deepcopy(data)
+            elif isinstance(dataset_entries, dict):
+                for identifier, entry in dataset_entries.items():
+                    assert identifier == entry.identifier
+                    self._data[identifier] = entry
 
-            if data_metadata is not None:
-                if not BaseDataSet._data_metadata_compat(data, data_metadata):
-                    raise ValueError("Data and metadata are not compatible.")
-
-                self._data_metadata = deepcopy(data_metadata)
-
-            if data_metadata is None:
-                self._data_metadata = {k: {} for k, _ in data.items()}
-
-            self._data_identifiers = list(data.keys())
+            self._data_identifiers = list(self._data.keys())
 
         # process supplied input data records
         self._sort_identifiers()
-
-    @staticmethod
-    def _data_metadata_compat(data, metadata) -> bool:
-        if len(data) != len(metadata):
-            return False
-        for k, _ in data.items():
-            if k not in metadata:
-                return False
-
-        return True
 
     def _sort_identifiers(self) -> None:
         self._data_identifiers.sort()
 
     def __len__(self):
         return len(self._data_identifiers)
-
-    def _pack_entry(self, index: str) -> BaseDataSetEntry:
-
-        if index not in self._data_identifiers:
-            raise ValueError(f"Unknown key '{index}'.")
-
-        return BaseDataSetEntry(
-            identifier=index,
-            data=self._data[index],
-            metadata=self._data_metadata[index],
-        )
 
     def __getitem__(self, index: int | str) -> Any:
 
@@ -86,12 +62,12 @@ class BaseDataSet:
                 raise IndexError(
                     f"Index '{index}' out of bounds for '{self.__class__}' of length '{len(self)}'."
                 )
-            return deepcopy(self._pack_entry(self._data_identifiers[index]))
+            return deepcopy(self._data[self._data_identifiers[index]])
 
         if isinstance(index, str):
             if index not in self._data_identifiers:
                 raise ValueError(f"Unknown key '{index}'.")
-            return deepcopy(self._pack_entry(index))
+            return deepcopy(self._data[index])
 
         raise ValueError(f"Indexing with index of type '{type(index)}' unsupported.")
 
@@ -125,8 +101,18 @@ class BaseDataSet:
         """
         return {
             "metadata": self._metadata,
-            "data": {"metadata": self._data_metadata, "data": self._data},
+            "data": self._data,
         }
+
+    @classmethod
+    def from_flat_dicts(
+        cls, data_dict: dict[str, Any], metadata: Optional[dict] = None
+    ) -> BaseDataSet:
+        ds_entries: list[BaseDataSetEntry] = [
+            BaseDataSetEntry(identifier=k, data=v, metadata={})
+            for k, v in data_dict.items()
+        ]
+        return cls(ds_metadata=metadata, dataset_entries=ds_entries)
 
     def to_pickle(self, fpath: str, mkdir: bool = False) -> None:
         """
@@ -156,8 +142,7 @@ class BaseDataSet:
 
         return cls(
             ds_metadata=ds_dict["metadata"],
-            data=ds_dict["data"]["data"],
-            data_metadata=ds_dict["data"]["metadata"],
+            dataset_entries=ds_dict["data"],
         )
 
     def __repr__(self) -> str:
