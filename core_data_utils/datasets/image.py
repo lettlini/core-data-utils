@@ -9,7 +9,7 @@ except ModuleNotFoundError as mnferr:
         "'opencv' is a required dependency for using 'ImageDataSet'"
     ) from mnferr
 
-from .base_dataset import BaseDataSet
+from .base_dataset import BaseDataSet, BaseDataSetEntry
 
 
 class ImageDataset(BaseDataSet):
@@ -33,9 +33,12 @@ class ImageDataset(BaseDataSet):
         filenames.sort()
 
         for filename in filenames:
-            data[filename] = cv2.cvtColor(
+            image = cv2.cvtColor(
                 cv2.imread(os.path.join(directory, filename), cv2.IMREAD_COLOR),
                 cv2.COLOR_BGR2RGB,
             )
+            data[filename] = BaseDataSetEntry(
+                identifier=filename, data=image, metadata={}
+            )
 
-        return cls(ds_metadata=None, data=data, data_metadata=None)
+        return cls(ds_metadata=None, dataset_entries=data)

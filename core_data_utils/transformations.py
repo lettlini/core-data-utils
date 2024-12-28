@@ -80,13 +80,9 @@ class BaseMultiDataSetTransformation:
             kwargs = copy.deepcopy(kwargs)
 
         new_dataset_metadata = self._transform_dataset_metadata(**kwargs)
-        new_data_dict, new_data_metadata_dict = self._transform_entries(
-            parallel=parallel, cpus=cpus, **kwargs
-        )
+        new_data_dict = self._transform_entries(parallel=parallel, cpus=cpus, **kwargs)
 
-        return self._post_processing(
-            new_dataset_metadata, new_data_dict, new_data_metadata_dict
-        )
+        return self._post_processing(new_dataset_metadata, new_data_dict)
 
     def _transform_dataset_metadata(self, **kwargs) -> dict:
         return {}
@@ -156,14 +152,9 @@ class BaseMultiDataSetTransformation:
                     self._transform_single_entry, entries_iterable
                 )
 
-        new_data_dict: dict = {
-            nentry.identifier: nentry.data for nentry in new_data_list
-        }
-        new_metadata_dict: dict = {
-            nentry.identifier: nentry.metadata for nentry in new_data_list
-        }
+        new_data_dict: dict = {nentry.identifier: nentry for nentry in new_data_list}
 
-        return new_data_dict, new_metadata_dict
+        return new_data_dict
 
     def _merge_entries(
         self, identifier: str, **kwargs: dict[str, BaseDataSetEntry]
@@ -185,9 +176,8 @@ class BaseMultiDataSetTransformation:
         self,
         dataset_metadata: dict[str, Any],
         data_dict: dict[str, Any],
-        metadata_dict: dict[str, Any],
     ) -> Any:
-        return BaseDataSet(dataset_metadata, data_dict, metadata_dict)
+        return BaseDataSet(dataset_metadata, data_dict)
 
 
 class BaseDataSetTransformation(BaseMultiDataSetTransformation):
