@@ -1,6 +1,6 @@
 import copy
 from multiprocessing import Pool
-from typing import Any, Iterable
+from typing import Any
 
 from tqdm import tqdm
 
@@ -75,6 +75,29 @@ class BaseMultiDataSetTransformation:
         copy_datasets: bool = True,
         **kwargs: dict[str, Any],
     ) -> Any:
+
+        if copy_datasets:
+            kwargs = copy.deepcopy(kwargs)
+
+        new_dataset_metadata = self._transform_dataset_metadata(**kwargs)
+        new_data_dict, new_data_metadata_dict = self._transform_entries(
+            parallel=parallel, cpus=cpus, **kwargs
+        )
+
+        return self._post_processing(
+            new_dataset_metadata, new_data_dict, new_data_metadata_dict
+        )
+
+    def _transform_dataset_metadata(self, **kwargs) -> dict:
+        return {}
+
+    def _transform_entries(
+        self,
+        parallel: bool = False,
+        cpus: int = 6,
+        copy_datasets: bool = True,
+        **kwargs: dict[str, Any],
+    ) -> Any:
         """
         Args:
             parallel (bool): If 'True', the transformation will be exectued in
@@ -103,53 +126,68 @@ class BaseMultiDataSetTransformation:
         # prepare list of identifiers
         identifiers: list[str] = next(iter(kwargs.values())).keys()
 
+        dataset_properties = {dsname: ds.metadata for dsname, ds in kwargs.items()}
+
         if not parallel:
             for identifier in tqdm(identifiers):
                 new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
                     self._merge_entries(
                         identifier=identifier,
-                        **{
-                            dsname: ds[identifier].data for dsname, ds in kwargs.items()
-                        },
-                    )
+                        **{dsname: ds[identifier] for dsname, ds in kwargs.items()},
+                    ),
+                    dataset_properties=dataset_properties,
                 )
                 new_data_list.append(new_ds_entry)
         else:
-            # create Iterable of "entries" that can be passed to Pool.map
-            entries_iterable: list[BaseDataSet] = [
-                self._merge_entries(
-                    identifier=identifier,
-                    **{dsname: ds[identifier].data for dsname, ds in kwargs.items()},
+            # create Iterable of "entries" that can be passed to Pool.starmap
+            entries_iterable: list[tuple[BaseDataSetEntry, dict]] = [
+                (
+                    self._merge_entries(
+                        identifier=identifier,
+                        **{dsname: ds[identifier] for dsname, ds in kwargs.items()},
+                    ),
+                    dataset_properties,
                 )
                 for identifier in identifiers
             ]
 
             with Pool(cpus) as parpool:
-                new_data_list: list[BaseDataSet] = parpool.map(
+                new_data_list: list[BaseDataSet] = parpool.starmap(
                     self._transform_single_entry, entries_iterable
                 )
 
         new_data_dict: dict = {
             nentry.identifier: nentry.data for nentry in new_data_list
         }
+        new_metadata_dict: dict = {
+            nentry.identifier: nentry.metadata for nentry in new_data_list
+        }
 
-        new_ds = self._post_processing(new_data_dict)
-
-        return new_ds
+        return new_data_dict, new_metadata_dict
 
     def _merge_entries(
         self, identifier: str, **kwargs: dict[str, BaseDataSetEntry]
     ) -> BaseDataSetEntry:
+        return BaseDataSetEntry(
+            identifier=identifier,
+            data={dsname: dsentry.data for dsname, dsentry in kwargs},
+            metadata={dsname: dsentry.metadata for dsname, dsentry in kwargs},
+        )
 
-        return BaseDataSetEntry(identifier=identifier, data=kwargs)
-
-    def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
+    def _transform_single_entry(
+        self, entry: BaseDataSetEntry, dataset_properties: dict
+    ) -> BaseDataSetEntry:
         raise NotImplementedError(
             "'_transform_single_entry' has not been implemented yet."
         )
 
-    def _post_processing(self, data_dict: dict[str, Any]) -> Any:
-        return BaseDataSet(data_dict)
+    def _post_processing(
+        self,
+        dataset_metadata: dict[str, Any],
+        data_dict: dict[str, Any],
+        metadata_dict: dict[str, Any],
+    ) -> Any:
+        return BaseDataSet(dataset_metadata, data_dict, metadata_dict)
 
 
 class BaseDataSetTransformation(BaseMultiDataSetTransformation):
@@ -157,16 +195,21 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
     def _assert_compatability(self, **kwargs) -> bool:
         return True
 
+    def _transform_dataset_metadata(self, **kwargs) -> dict:
+        return kwargs["x"].metadata
+
     def _merge_entries(
-        self, identifier: str, **kwargs: dict[str, BaseDataSetEntry]
+        self, identifier, **kwargs: dict[str, BaseDataSetEntry]
     ) -> BaseDataSetEntry:
         if len(kwargs) != 1:
             raise ValueError(
                 f"Expected exactly 1 data entry to merge, got {len(kwargs)}."
             )
-        return BaseDataSetEntry(identifier=identifier, data=next(iter(kwargs.values())))
+        return kwargs["x"]
 
-    def _transform_single_entry(self, entry: BaseDataSetEntry) -> BaseDataSetEntry:
+    def _transform_single_entry(
+        self, entry: BaseDataSetEntry, dataset_properties: dict
+    ) -> BaseDataSetEntry:
         raise NotImplementedError(
             "'_transform_single_entry' has not been implemented yet."
         )
