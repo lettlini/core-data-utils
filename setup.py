@@ -8,5 +8,5 @@ setup(
     description="framework for working with data structures I frequently use when building data pipelines for research",
     packages=find_packages(exclude="tests"),
     install_requires=["tqdm"],
-    extras_require={"image": ["opencv-python"], "graph": ["networkx"]},
+    extras_require={"image": ["opencv-python"]},
 )
