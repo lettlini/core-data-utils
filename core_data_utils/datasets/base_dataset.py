@@ -162,3 +162,16 @@ class BaseDataSet:
                     f"\t ├─── ({i}) {entry.identifier}: {entry.data.__class__} \n"
                 )
         return reprstr
+
+    def copy(self) -> BaseDataSet:
+        """
+        Create a (deep) copy of the dataset
+        Returns:
+            (BaseDataSet): a fully independent copy of the dataset.
+        """
+        independent_ds_dict = deepcopy(self.to_dict())
+
+        return BaseDataSet(
+            ds_metadata=independent_ds_dict["metadata"],
+            dataset_entries=independent_ds_dict["data"],
+        )
