@@ -2,11 +2,35 @@ from __future__ import annotations
 
 import os
 import pickle
-from collections import namedtuple
+from collections.abc import Hashable
 from copy import deepcopy
 from typing import Any, Optional
 
-BaseDataSetEntry = namedtuple("BaseDataSetEntry", ["identifier", "data", "metadata"])
+
+class BaseDataSetEntry:
+
+    def __init__(
+        self, identifier: Hashable, data: Any, metadata: Optional[dict] = None
+    ) -> None:
+        self._identifier = identifier
+        self._data = data
+        self._metadata = metadata if metadata is not None else {}
+
+    @property
+    def identifier(self) -> Hashable:
+        return self._identifier
+
+    @property
+    def data(self) -> str:
+        return self._data
+
+    @data.getter
+    def data(self) -> str:
+        return self._data
+
+    @property
+    def metadata(self) -> dict:
+        return self._metadata
 
 
 class BaseDataSet:
