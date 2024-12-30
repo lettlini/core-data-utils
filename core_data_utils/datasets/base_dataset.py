@@ -86,7 +86,7 @@ class BaseDataSet:
                 raise IndexError(
                     f"Index '{index}' out of bounds for '{self.__class__}' of length '{len(self)}'."
                 )
-            return deepcopy(self._data[self._data_identifiers[index]])
+            return self._data[self._data_identifiers[index]]
 
         raise ValueError(
             f"Indices have to be integers, got index of type {type(index)}"
