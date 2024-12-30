@@ -83,7 +83,9 @@ class BaseMultiDataSetTransformation:
         new_dataset_metadata = self._transform_dataset_metadata(**kwargs)
         new_data_dict = self._transform_entries(parallel=parallel, cpus=cpus, **kwargs)
 
-        return self._post_processing(new_dataset_metadata, new_data_dict)
+        return self._post_processing(
+            dataset_metadata=new_dataset_metadata, data_dict=new_data_dict
+        )
 
     def _transform_dataset_metadata(self, **kwargs) -> dict:
         return {}
@@ -168,8 +170,8 @@ class BaseMultiDataSetTransformation:
     ) -> BaseDataSetEntry:
         return BaseDataSetEntry(
             identifier=identifier,
-            data={dsname: dsentry.data for dsname, dsentry in kwargs},
-            metadata={dsname: dsentry.metadata for dsname, dsentry in kwargs},
+            data={dsname: dsentry.data for dsname, dsentry in kwargs.items()},
+            metadata={dsname: dsentry.metadata for dsname, dsentry in kwargs.items()},
         )
 
     def _transform_single_entry(
