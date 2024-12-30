@@ -95,4 +95,4 @@ def test_indexing_with_int():
     )
 
     assert sds[0].data == 0
-    assert sds[1].datas == 2
+    assert sds[1].data == 2
