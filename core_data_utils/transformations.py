@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Hashable
 from multiprocessing import Pool
 from typing import Any
 
@@ -58,7 +59,7 @@ class BaseMultiDataSetTransformation:
         pass
 
     def _assert_compatability(self, **kwargs) -> bool:
-        identifiers: list[str] = []
+        identifiers: list[Hashable] = []
 
         for index, (_, ds) in enumerate(kwargs.items()):
             if index == 0:
@@ -120,7 +121,7 @@ class BaseMultiDataSetTransformation:
         new_data_list: list[BaseDataSetEntry] = []
 
         # prepare list of identifiers
-        identifiers: list[str] = next(iter(kwargs.values())).keys()
+        identifiers: list[Hashable] = next(iter(kwargs.values())).keys()
 
         dataset_properties = {dsname: ds.metadata for dsname, ds in kwargs.items()}
 
@@ -129,7 +130,10 @@ class BaseMultiDataSetTransformation:
                 new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
                     self._merge_entries(
                         identifier=identifier,
-                        **{dsname: ds[identifier] for dsname, ds in kwargs.items()},
+                        **{
+                            dsname: ds.get_with_identifier(identifier)
+                            for dsname, ds in kwargs.items()
+                        },
                     ),
                     dataset_properties=dataset_properties,
                 )
@@ -140,7 +144,10 @@ class BaseMultiDataSetTransformation:
                 (
                     self._merge_entries(
                         identifier=identifier,
-                        **{dsname: ds[identifier] for dsname, ds in kwargs.items()},
+                        **{
+                            dsname: ds.get_with_identifier(identifier)
+                            for dsname, ds in kwargs.items()
+                        },
                     ),
                     dataset_properties,
                 )

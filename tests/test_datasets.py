@@ -1,3 +1,5 @@
+import pytest
+
 from core_data_utils.datasets import BaseDataSet
 
 
@@ -70,3 +72,27 @@ def test_dataset_copying():
 
     assert 1 not in sds._data
     assert 1 in copied_ds._data
+
+
+def test_indexing_with_str():
+    example_data = {str(i): 2 * i for i in range(9)}
+
+    sds = BaseDataSet.from_flat_dicts(
+        example_data,
+        None,
+    )
+
+    with pytest.raises(ValueError):
+        _ = sds["1"]
+
+
+def test_indexing_with_int():
+    example_data = {str(i): 2 * i for i in range(9)}
+
+    sds = BaseDataSet.from_flat_dicts(
+        example_data,
+        None,
+    )
+
+    assert sds[0].data == 0
+    assert sds[1].datas == 2
