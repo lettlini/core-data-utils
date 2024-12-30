@@ -10,7 +10,7 @@ def test_empty_dataset():
 
 
 def test_simple_dataset():
-    example_data = {str(i): 2 * i for i in range(9)}
+    example_data = {i: 2 * i for i in range(9)}
 
     sds = BaseDataSet.from_flat_dicts(
         example_data,
@@ -21,7 +21,7 @@ def test_simple_dataset():
     assert len(sds) == 9
 
     for idx, entry in enumerate(sds):
-        assert entry.identifier == str(idx)
+        assert entry.identifier == idx
         assert entry.data == 2 * idx
 
 
@@ -39,7 +39,7 @@ def test_data_independence():
 
 
 def test_saving_loading():
-    example_data = {str(i): 2 * i for i in range(9)}
+    example_data = {i: 2 * i for i in range(9)}
 
     sds = BaseDataSet.from_flat_dicts(
         example_data,
@@ -57,7 +57,7 @@ def test_saving_loading():
 
 
 def test_dataset_copying():
-    example_data = {str(i): 2 * i for i in range(9)}
+    example_data = {i: 2 * i for i in range(9)}
 
     sds = BaseDataSet.from_flat_dicts(
         example_data,
@@ -66,7 +66,7 @@ def test_dataset_copying():
 
     copied_ds = sds.copy()
 
-    _ = sds._data.pop("1")
+    _ = sds._data.pop(1)
 
-    assert "1" not in sds._data
-    assert "1" in copied_ds._data
+    assert 1 not in sds._data
+    assert 1 in copied_ds._data

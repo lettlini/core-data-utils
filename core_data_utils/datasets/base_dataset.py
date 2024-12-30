@@ -2,11 +2,35 @@ from __future__ import annotations
 
 import os
 import pickle
-from collections import namedtuple
+from collections.abc import Hashable
 from copy import deepcopy
 from typing import Any, Optional
 
-BaseDataSetEntry = namedtuple("BaseDataSetEntry", ["identifier", "data", "metadata"])
+
+class BaseDataSetEntry:
+
+    def __init__(
+        self, identifier: Hashable, data: Any, metadata: Optional[dict] = None
+    ) -> None:
+        self._identifier = identifier
+        self._data = data
+        self._metadata = metadata if metadata is not None else {}
+
+    @property
+    def identifier(self) -> Hashable:
+        return self._identifier
+
+    @property
+    def data(self) -> str:
+        return self._data
+
+    @data.getter
+    def data(self) -> str:
+        return self._data
+
+    @property
+    def metadata(self) -> dict:
+        return self._metadata
 
 
 class BaseDataSet:
@@ -23,7 +47,7 @@ class BaseDataSet:
         self,
         ds_metadata: Optional[dict[str, Any]] = None,
         dataset_entries: Optional[
-            list[BaseDataSetEntry] | dict[str, BaseDataSetEntry]
+            list[BaseDataSetEntry] | dict[Hashable, BaseDataSetEntry]
         ] = None,
     ) -> None:
 
@@ -31,8 +55,8 @@ class BaseDataSet:
         self._metadata: dict[str, Any] = (
             deepcopy(ds_metadata) if ds_metadata is not None else {}
         )
-        self._data_identifiers: list[str] = []
-        self._data: dict[str, BaseDataSetEntry] = {}
+        self._data_identifiers: list[Hashable] = []
+        self._data: dict[Hashable, BaseDataSetEntry] = {}
 
         if dataset_entries is not None:
             if isinstance(dataset_entries, list):
@@ -55,7 +79,7 @@ class BaseDataSet:
     def __len__(self):
         return len(self._data_identifiers)
 
-    def __getitem__(self, index: int | str) -> Any:
+    def __getitem__(self, index: int) -> Any:
 
         if isinstance(index, int):
             if (index >= len(self)) or (index < 0):
@@ -64,14 +88,11 @@ class BaseDataSet:
                 )
             return deepcopy(self._data[self._data_identifiers[index]])
 
-        if isinstance(index, str):
-            if index not in self._data_identifiers:
-                raise ValueError(f"Unknown key '{index}'.")
-            return deepcopy(self._data[index])
+        raise ValueError(
+            f"Indices have to be integers, got index of type {type(index)}"
+        )
 
-        raise ValueError(f"Indexing with index of type '{type(index)}' unsupported.")
-
-    def keys(self) -> list[str]:
+    def keys(self) -> list[Hashable]:
         """
         Return list of data identifiers.
 
@@ -106,7 +127,7 @@ class BaseDataSet:
 
     @classmethod
     def from_flat_dicts(
-        cls, data_dict: dict[str, Any], metadata: Optional[dict] = None
+        cls, data_dict: dict[Hashable, Any], metadata: Optional[dict] = None
     ) -> BaseDataSet:
         ds_entries: list[BaseDataSetEntry] = [
             BaseDataSetEntry(identifier=k, data=v, metadata={})
@@ -175,3 +196,8 @@ class BaseDataSet:
             ds_metadata=independent_ds_dict["metadata"],
             dataset_entries=independent_ds_dict["data"],
         )
+
+    def get_with_identifier(self, identifier: Hashable) -> BaseDataSetEntry:
+        if identifier not in self._data_identifiers:
+            raise ValueError(f"Identifier {identifier} is not a valid key.")
+        return self._data[identifier]

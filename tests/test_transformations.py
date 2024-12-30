@@ -19,7 +19,7 @@ class SquareNumTransformation(BaseDataSetTransformation):
 def test_serial_parallel():
     st = SquareNumTransformation()
 
-    example_data = {str(i): 2 * i for i in range(9)}
+    example_data = {i: 2 * i for i in range(9)}
 
     ods = BaseDataSet.from_flat_dicts(example_data)
 
