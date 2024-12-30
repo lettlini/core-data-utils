@@ -27,11 +27,11 @@ class BaseFilter:
             if self._filter_decision_single_entry(
                 idx, c_ds_entry, **self._global_dataset_properties(dataset)
             ):
-                new_data[c_ds_entry.identifier] = c_ds_entry.data
+                new_data[c_ds_entry.identifier] = c_ds_entry
 
-        new_ds = self._post_processing(new_data)
-
-        return new_ds
+        return self._post_processing(
+            dataset_metadata=dataset.metadata, data_dict=new_data
+        )
 
     def _global_dataset_properties(self, _: BaseDataSet) -> dict:
         return {}
@@ -43,8 +43,8 @@ class BaseFilter:
             "method '_filter_decision_single_entry' has not yet been implemented"
         )
 
-    def _post_processing(self, data_dict: dict):
-        return BaseDataSet(data_dict)
+    def _post_processing(self, dataset_metadata: dict, data_dict: dict):
+        return BaseDataSet(ds_metadata=dataset_metadata, dataset_entries=data_dict)
 
 
 class BaseMultiDataSetTransformation:
@@ -177,7 +177,7 @@ class BaseMultiDataSetTransformation:
         dataset_metadata: dict[str, Any],
         data_dict: dict[str, Any],
     ) -> Any:
-        return BaseDataSet(dataset_metadata, data_dict)
+        return BaseDataSet(ds_metadata=dataset_metadata, dataset_entries=data_dict)
 
 
 class BaseDataSetTransformation(BaseMultiDataSetTransformation):
