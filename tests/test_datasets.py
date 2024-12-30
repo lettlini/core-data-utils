@@ -4,28 +4,53 @@ from core_data_utils.datasets import BaseDataSet
 def test_empty_dataset():
     bds = BaseDataSet()
 
-    assert bds._num_entries == 0
-    assert not bds._identifiers
+    assert len(bds) == 0
+    assert not bds._data_identifiers
     assert len(bds._data) == 0
 
 
 def test_simple_dataset():
-    example_data = {i: 2 * i for i in range(500)}
+    example_data = {str(i): 2 * i for i in range(9)}
 
-    sds = BaseDataSet(example_data)
+    sds = BaseDataSet.from_flat_dicts(
+        example_data,
+        None,
+    )
 
-    assert len(sds) == 500
+    print(sds._data_identifiers)
+    assert len(sds) == 9
 
     for idx, entry in enumerate(sds):
-        assert entry.identifier == idx
+        assert entry.identifier == str(idx)
         assert entry.data == 2 * idx
 
 
 def test_data_independence():
     example_data = {i: 2 * i for i in range(500)}
 
-    sds = BaseDataSet(example_data)
+    sds = BaseDataSet.from_flat_dicts(
+        example_data,
+        None,
+    )
 
     example_data[0] = -1
 
     assert sds[0].data == 0
+
+
+def test_saving_loading():
+    example_data = {str(i): 2 * i for i in range(9)}
+
+    sds = BaseDataSet.from_flat_dicts(
+        example_data,
+        None,
+    )
+
+    sds.to_pickle("/tmp/pytest/test.pickle", mkdir=True)
+    lds = sds.from_pickle("/tmp/pytest/test.pickle")
+
+    assert len(lds) == 9
+
+    for idx, entry in enumerate(lds):
+        assert entry.identifier == sds[idx].identifier
+        assert entry.data == sds[idx].data

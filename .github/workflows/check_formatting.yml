@@ -19,4 +19,4 @@ jobs:
       - name: Check formatting
         run: |
           black --check .
-          isort --check-only .
+          isort --check-only . --profile="black"
