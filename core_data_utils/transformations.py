@@ -94,7 +94,6 @@ class BaseMultiDataSetTransformation:
         self,
         parallel: bool = False,
         cpus: int = 6,
-        copy_datasets: bool = True,
         **kwargs: dict[str, Any],
     ) -> Any:
         """
@@ -116,9 +115,6 @@ class BaseMultiDataSetTransformation:
 
         if not self._assert_compatability(**kwargs):
             raise RuntimeError("Supplied DataSets are not compatible.")
-
-        if copy_datasets:
-            kwargs = copy.deepcopy(kwargs)
 
         new_data_list: list[BaseDataSetEntry] = []
 
