@@ -71,8 +71,7 @@ class BaseMultiDataSetTransformation:
 
     def _transform(
         self,
-        parallel: bool = False,
-        cpus: int = 6,
+        cpus: int = 1,
         copy_datasets: bool = True,
         **kwargs: dict[str, Any],
     ) -> Any:
@@ -81,7 +80,7 @@ class BaseMultiDataSetTransformation:
             kwargs = copy.deepcopy(kwargs)
 
         new_dataset_metadata = self._transform_dataset_metadata(**kwargs)
-        new_data_dict = self._transform_entries(parallel=parallel, cpus=cpus, **kwargs)
+        new_data_dict = self._transform_entries(cpus=cpus, **kwargs)
 
         return self._post_processing(
             dataset_metadata=new_dataset_metadata, data_dict=new_data_dict
@@ -92,16 +91,13 @@ class BaseMultiDataSetTransformation:
 
     def _transform_entries(
         self,
-        parallel: bool = False,
-        cpus: int = 6,
+        cpus: int = 1,
         **kwargs: dict[str, Any],
     ) -> Any:
         """
         Args:
-            parallel (bool): If 'True', the transformation will be exectued in
-                parallel. Default is 'False'.
             cpus (int): How many processes should be spawned when executing
-                transformation in parallel. Default is '6'.
+                transformation in parallel. Default is '1' (no parallel processing).
             copy_datasets (bool): Whether to create a (deep) copy of the
                 input datasets. Default is 'True'
             **kwargs (dict[str, BaseDataSet]): Iterable of DataSets acting as
@@ -123,7 +119,7 @@ class BaseMultiDataSetTransformation:
 
         dataset_properties = {dsname: ds.metadata for dsname, ds in kwargs.items()}
 
-        if not parallel:
+        if cpus == 1:
             for identifier in tqdm(identifiers):
                 new_ds_entry: BaseDataSetEntry = self._transform_single_entry(
                     self._merge_entries(
@@ -136,7 +132,7 @@ class BaseMultiDataSetTransformation:
                     dataset_properties=dataset_properties,
                 )
                 new_data_list.append(new_ds_entry)
-        else:
+        elif cpus > 1:
             # create Iterable of "entries" that can be passed to Pool.starmap
             entries_iterable: list[tuple[BaseDataSetEntry, dict]] = [
                 (
@@ -156,6 +152,10 @@ class BaseMultiDataSetTransformation:
                 new_data_list: list[BaseDataSet] = parpool.starmap(
                     self._transform_single_entry, entries_iterable
                 )
+        else:
+            raise ValueError(
+                f"Could not interpret provided number of CPU cores to use: got '{cpus}'."
+            )
 
         new_data_dict: dict = {nentry.identifier: nentry for nentry in new_data_list}
 
@@ -212,10 +212,7 @@ class BaseDataSetTransformation(BaseMultiDataSetTransformation):
     def __call__(
         self,
         dataset: BaseDataSet,
-        parallel: bool = False,
-        cpus: int = 6,
+        cpus: int = 1,
         copy_datasets: bool = True,
     ) -> Any:
-        return super()._transform(
-            parallel=parallel, cpus=cpus, copy_datasets=copy_datasets, x=dataset
-        )
+        return super()._transform(cpus=cpus, copy_datasets=copy_datasets, x=dataset)

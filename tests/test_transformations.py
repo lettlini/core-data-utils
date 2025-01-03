@@ -23,8 +23,8 @@ def test_serial_parallel():
 
     ods = BaseDataSet.from_flat_dicts(example_data)
 
-    serial_ds = st(dataset=ods, parallel=False)
-    parallel_ds = st(dataset=ods, parallel=True, cpus=2)
+    serial_ds = st(dataset=ods)
+    parallel_ds = st(dataset=ods, cpus=2)
 
     assert serial_ds._data_identifiers == parallel_ds._data_identifiers
 
