@@ -32,6 +32,18 @@ class BaseDataSetEntry:
     def metadata(self) -> dict:
         return self._metadata
 
+    def __repr__(self) -> str:
+        reprstr = f"BaseDataSetEntry \n\t identifier:\t '{self._identifier}'"
+        reprstr += f"\n\t data: \t\t {type(self._data).__name__}"
+
+        if not self._metadata:
+            reprstr += "\n\t metadata: \t <empty>"
+
+        else:
+            reprstr += f"\n\t metadata: \t{str(self._metadata)}"
+
+        return reprstr
+
 
 class BaseDataSet:
     """
