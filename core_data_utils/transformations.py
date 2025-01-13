@@ -1,6 +1,6 @@
 import copy
+import multiprocessing as mp
 from collections.abc import Hashable
-from multiprocessing import Pool
 from typing import Any
 
 from tqdm import tqdm
@@ -147,8 +147,12 @@ class BaseMultiDataSetTransformation:
                 )
                 for identifier in identifiers
             ]
-
-            with Pool(cpus) as parpool:
+            cmethod = mp.get_start_method()
+            if cmethod != "spawn":
+                raise RuntimeError(
+                    f"Multiprocessing start method has to be 'spawn', got '{cmethod}' instead."
+                )
+            with mp.Pool(cpus) as parpool:
                 new_data_list: list[BaseDataSet] = parpool.starmap(
                     self._transform_single_entry, entries_iterable
                 )

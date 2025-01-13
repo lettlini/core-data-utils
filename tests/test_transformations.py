@@ -1,3 +1,4 @@
+import multiprocessing as mp
 from typing import Any
 
 from core_data_utils.datasets import BaseDataSet, BaseDataSetEntry
@@ -6,14 +7,9 @@ from core_data_utils.transformations import (
     BaseMultiDataSetTransformation,
 )
 
+from .square_num_transformation import SquareNumTransformation
 
-class SquareNumTransformation(BaseDataSetTransformation):
-    def _transform_single_entry(
-        self, entry: BaseDataSetEntry, dataset_properties: dict
-    ) -> BaseDataSetEntry:
-        num = entry.data
-
-        return BaseDataSetEntry(entry.identifier, data=num**2, metadata=entry.metadata)
+mp.set_start_method("spawn", force=True)
 
 
 def test_serial_parallel():
