@@ -96,3 +96,26 @@ def test_indexing_with_int():
 
     assert sds[0].data == 0
     assert sds[1].data == 2
+
+
+def test_indexing_with_slice():
+    example_data = {str(i): 2 * i for i in range(9)}
+
+    sds = BaseDataSet.from_flat_dicts(
+        example_data,
+        None,
+    )
+
+    with pytest.raises(ValueError):
+        _ = sds[0:5:-1]
+
+    with pytest.raises(ValueError):
+        _ = sds[5:5]
+
+    sliced_ds = sds[0:5]
+
+    assert len(sliced_ds) == 5
+
+    for idx, entry in enumerate(sliced_ds):
+        assert entry.identifier == str(idx)
+        assert entry.data == idx * 2

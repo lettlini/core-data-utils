@@ -100,6 +100,32 @@ class BaseDataSet:
                 )
             return self._data[self._data_identifiers[index]]
 
+        if isinstance(index, slice):
+            # Handle slice notation (e.g., obj[1:10])
+            start = index.start
+            stop = index.stop
+            step = index.step if index.step is not None else 1
+
+            if step < 1:
+                raise ValueError(
+                    f"Step of slice has to be a positive integer >=1, got '{step}'"
+                )
+            if start >= stop:
+                raise ValueError(
+                    f"'start' of slice has to be strictly less than 'stop' of slice, got start='{start}', stop='{stop}'"
+                )
+
+            entries_to_return = []
+
+            cidx = start
+            while cidx < stop:
+                entries_to_return.append(self[cidx])
+                cidx += step
+
+            return BaseDataSet(
+                ds_metadata=self._metadata, dataset_entries=entries_to_return
+            )
+
         raise ValueError(
             f"Indices have to be integers, got index of type {type(index)}"
         )
